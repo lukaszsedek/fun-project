@@ -1,14 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name:  frontend
+  name:  {{ .Values.frontend.name }}
+  namespace: {{ .Values.namespace }}
   labels:
-    app:  frontend
+    app:  {{ .Values.frontend.name }}
+    tier: {{ .Values.frontend.tier }}
 spec:
   selector:
     matchLabels:
-      app: frontend
-  replicas: 1
+      app: {{ .Values.frontend.name }}
+  replicas: {{ .Values.frontend.replicas }}
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -17,11 +19,12 @@ spec:
   template:
     metadata:
       labels:
-        app:  frontend
+        app:  {{ .Values.frontend.name }}
+        tier: {{ .Values.frontend.tier }}
     spec:
       containers:
-      - name:  frontend
-        image: nginx:1.21
+      - name:  {{ .Values.frontend.name }}
+        image: {{ .Values.frontend.image }}
         resources:
           requests:
             cpu: 100m
@@ -29,9 +32,12 @@ spec:
           limits:
             cpu: 100m
             memory: 300Mi
+        env:
+        - name: PORT
+          value: {{ .Values.frontend.port | quote }}
         livenessProbe:
           tcpSocket:
-            port: 80
+            port: {{ .Values.frontend.port }}
           initialDelaySeconds: 5
           timeoutSeconds: 5
           successThreshold: 1
@@ -40,30 +46,34 @@ spec:
         readinessProbe:
           httpGet:
             path: /
-            port: 80
+            port: {{ .Values.frontend.port }}
           initialDelaySeconds: 5
           timeoutSeconds: 2
           successThreshold: 1
           failureThreshold: 3
           periodSeconds: 10
         ports:
-        - containerPort:  80
-          name:  frontend
+        - containerPort:  {{ .Values.frontend.port }}
+          name:  {{ .Values.frontend.name }}
       restartPolicy: Always
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend
+  name: {{ .Values.frontend.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app:  {{ .Values.frontend.name }}
+    tier: {{ .Values.frontend.tier }}
 spec:
   selector:
-    app: frontend
+    app: {{ .Values.frontend.name }}
   type: ClusterIP
   sessionAffinity: None
   sessionAffinityConfig:
     clientIP:
       timeoutSeconds: 10800
   ports:
-  - name: frontend
-    port: 80
+  - name: {{ .Values.frontend.name }}
+    port: {{ .Values.frontend.port }}

@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.db.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app:  {{ .Values.db.name }}
+    tier: {{ .Values.db.tier }}
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: {{ .Values.db.name }}
+  clusterIP: None
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.db.name }}-pv-volume
+  namespace: {{ .Values.namespace }}
+  labels:
+    type: local
+    app:  {{ .Values.db.name }}
+    tier: {{ .Values.db.tier }}
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.db.name }}-pv-claim
+  namespace: {{ .Values.namespace }}
+  labels:
+    app:  {{ .Values.db.name }}
+    tier: {{ .Values.db.tier }}
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.db.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app:  {{ .Values.db.name }}
+    tier: {{ .Values.db.tier }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.db.name }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.db.name }}
+    spec:
+      containers:
+      - image: {{ .Values.db.image }}
+        name: {{ .Values.db.name }}
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: db_password
+        ports:
+        - containerPort: 3306
+          name: {{ .Values.db.name }}
+        volumeMounts:
+        - name: {{ .Values.db.name }}-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: {{ .Values.db.name }}-persistent-storage
+        persistentVolumeClaim:
+          claimName: {{ .Values.db.name }}-pv-claim
