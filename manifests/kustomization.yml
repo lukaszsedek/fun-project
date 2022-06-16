@@ -1,0 +1,5 @@
+resources:
+  - namespace.yml
+  - frontend.yml
+  - frontend-secrets.yml
+namespace: my-fun-project
