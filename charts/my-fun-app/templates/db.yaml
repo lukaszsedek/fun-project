@@ -1,26 +1,26 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.db.name }}
+  name: {{ .Values.db.name | default "mysql" }}
   namespace: {{ .Values.namespace }}
   labels:
-    app:  {{ .Values.db.name }}
+    app:  {{ .Values.db.name | default "mysql" }}
     tier: {{ .Values.db.tier }}
 spec:
   ports:
   - port: 3306
   selector:
-    app: {{ .Values.db.name }}
+    app: {{ .Values.db.name | default "mysql" }}
   clusterIP: None
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .Values.db.name }}-pv-volume
+  name: {{ .Values.db.name | default "mysql" }}-pv-volume
   namespace: {{ .Values.namespace }}
   labels:
     type: local
-    app:  {{ .Values.db.name }}
+    app:  {{ .Values.db.name | default "mysql" }}
     tier: {{ .Values.db.tier }}
 spec:
   storageClassName: manual
@@ -34,10 +34,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Values.db.name }}-pv-claim
+  name: {{ .Values.db.name | default "mysql" }}-pv-claim
   namespace: {{ .Values.namespace }}
   labels:
-    app:  {{ .Values.db.name }}
+    app:  {{ .Values.db.name | default "mysql" }}
     tier: {{ .Values.db.tier }}
 spec:
   storageClassName: manual
@@ -50,25 +50,26 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.db.name }}
+  name: {{ .Values.db.name | default "mysql" }}
   namespace: {{ .Values.namespace }}
   labels:
-    app:  {{ .Values.db.name }}
+    app:  {{ .Values.db.name | default "mysql" }}
     tier: {{ .Values.db.tier }}
 spec:
   selector:
     matchLabels:
-      app: {{ .Values.db.name }}
+      app: {{ .Values.db.name | default "mysql" }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: {{ .Values.db.name }}
+        app: {{ .Values.db.name | default "mysql" }}
+        tier: {{ .Values.db.tier }}
     spec:
       containers:
       - image: {{ .Values.db.image }}
-        name: {{ .Values.db.name }}
+        name: {{ .Values.db.name | default "mysql" }}
         env:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
@@ -77,11 +78,11 @@ spec:
               key: db_password
         ports:
         - containerPort: 3306
-          name: {{ .Values.db.name }}
+          name: {{ .Values.db.name | default "mysql" }}
         volumeMounts:
-        - name: {{ .Values.db.name }}-persistent-storage
+        - name: {{ .Values.db.name | default "mysql" }}-persistent-storage
           mountPath: /var/lib/mysql
       volumes:
-      - name: {{ .Values.db.name }}-persistent-storage
+      - name: {{ .Values.db.name | default "mysql" }}-persistent-storage
         persistentVolumeClaim:
-          claimName: {{ .Values.db.name }}-pv-claim
+          claimName: {{ .Values.db.name | default "mysql" }}-pv-claim
